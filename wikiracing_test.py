@@ -9,15 +9,21 @@ class WikiRacerTest(unittest.TestCase):
 
     def test_1(self):
         path = self.racer.find_path('Дружба', 'Рим')
-        self.assertEqual(path, ['Дружба', 'Якопо Понтормо', 'Рим'])
+        self.assertEqual(
+            path, ['Дружба', 'Якопо Понтормо', 'Рим']
+        )
 
     def test_2(self):
         path = self.racer.find_path('Мітохондріальна ДНК', 'Вітамін K')
-        self.fail("implement me")
+        self.assertEqual(
+            path, ['Мітохондріальна ДНК', 'Бактерії', 'Вітамін K']
+        )
 
     def test_3(self):
-        path = self.racer.find_path('Марка (грошова одиниця)', 'Китайський календар')
-        self.fail("implement me")
+        path = self.racer.find_path('Марка (грошова одиниця)', 'Китайський календар') # noqa
+        self.assertEqual(
+            path, ['Марка (грошова одиниця)', '1549', 'Китайський календар']
+        )
 
     def test_4(self):
         path = self.racer.find_path('Фестиваль', 'Пілястра')

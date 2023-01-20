@@ -1,16 +1,14 @@
 from typing import List
-from urllib.parse import unquote
-from bs4 import BeautifulSoup
 import requests
-from time import sleep
 
 from custom_list import CustomList
 from wikipedia import Wikipedia
+from database import Database as db
 
 requests_per_minute = 100
 links_per_page = 200
 
-wiki = Wikipedia()
+wiki = Wikipedia("uk", requests_per_minute)
 
 
 class WikiRacer:
@@ -22,6 +20,8 @@ class WikiRacer:
     def find_path(self, start: str, finish: str) -> List[str]:
         self.cL = CustomList()
         self.path = []
+        self.checked = []
+        self.curr_level = 0
 
         u_start = start.replace(' ', '_')
         u_finish = finish.replace(' ', '_')
@@ -44,95 +44,60 @@ class WikiRacer:
 
     def links_finder(self) -> List[str]:
 
+        self.curr_level += 1
+        if self.curr_level > 3:
+            return False
+
         # check links starting from first node
         self.cL.insert_level(self.cL._curr_level)
         pages = self.cL.get_title(self.cL._curr_level - 1)
 
         for page in pages:
-            print(page)
-            obj = wiki.get_links(page, links_per_page)
-            titles = wiki.parse_links_titles(obj)
-            arr = [{'title': title, 'parent': page} for title in titles]
-            self.cL.append_array(arr)
-        
-        # compare links
-        self.dublicate_link = self.cL.compare()
 
-        if self.dublicate_link is not False:
-            return True
+            if page in self.checked:
+                continue
+
+            titles = db.get_titles(page)
+            print(self.curr_level)
+            print('db:', page)
+            
+            if not titles:
+                
+                print('url:', page)
+                obj = wiki.get_links(page, links_per_page)
+                titles = wiki.parse_links_titles(obj)
+                
+                for title in titles:
+                    db.insert_relation(title, page)
+
+            arr = [{'title': title, 'parent': page} for title in titles]
+
+            self.cL.append_array(arr)
+            self.checked.append(page)
+        
+        # search dublicate
+        for arr in self.cL._data[1:-1]:
+            for obj in arr:
+                if obj['title'] == self.cL._data[-1][0]['title']:
+                    self.dublicate_title = obj['title']
+                    return True
 
         self.cL._curr_level += 1
-
-        # check links starting from last node
-        self.cL.insert_level(self.cL._curr_level)
-        pages = self.cL.get_title(self.cL._curr_level + 1)
-
-        for page in pages:
-            print(page)
-            obj = wiki.get_linkshere(page, links_per_page)
-            titles = wiki.parse_links_titles(obj)
-            arr = [{'title': title, 'parent': page} for title in titles]
-            self.cL.append_array(arr)
-        
-        # compare links
-        self.dublicate_link = self.cL.compare()
-
-        if self.dublicate_link is not False:
-            return True
 
         return self.links_finder()
 
     def build_path(self) -> List[str]:
-        title = self.dublicate_link
-        curr_level = self.cL._curr_level
-        if self.cL._total_levels % 2 == 0:
-            # last links parsed normal (go back)
-            n = -1
-        else:
-            #  last links parsed reverse (go forward)
-            n = 1
-        
-        while (self.cL._curr_level != -1
-                and self.cL._curr_level != self.cL._total_levels):
-            braked = False
-            for obj in self.cL._data[self.cL._curr_level]:
-                if obj['title'] == title:
-                    if n == -1:
-                        self.path.insert(0, title)
-                    else:
-                        self.path.append(title)
+        for arr in self.cL._data[1:-1]:
+            for obj in arr:
+                if obj['title'] == self.dublicate_title:
+                    self.path.insert(0, obj['title'])
+                    self.dublicate_title = obj['parent']
+                    
+                    if self.dublicate_title == self.cL._data[0][0]['title']:
+                        self.path.insert(0, self.dublicate_title)
+                        return self.path
 
-                    self.cL._curr_level += n
-                    title = obj['parent']
-                    braked = True
-                    break
-
-            if not braked:
-                self.cL._curr_level += n
-
-        n = -n
-        self.cL._curr_level = curr_level + n
-        title = self.dublicate_link
-        while (self.cL._curr_level != -1
-                and self.cL._curr_level != self.cL._total_levels):
-            braked = False
-            for obj in self.cL._data[self.cL._curr_level]:
-                if obj['title'] == title:
-                    if title not in self.path:
-                        if n == -1:
-                            self.path.insert(0, title)
-                        else:
-                            self.path.append(title)
-
-                    self.cL._curr_level += n
-                    title = obj['parent']
-                    braked = True
-                    break
-
-            if not braked:
-                self.cL._curr_level += n
-
-        return self.path
+                    return self.build_path()
 
     @staticmethod
     def is_url_exists(url: str) -> bool:
@@ -141,6 +106,6 @@ class WikiRacer:
 
 if __name__ == '__main__':
     wR = WikiRacer('uk')
-    words = ('Дружба', 'Рим')
+    words = ('Фестиваль', 'Пілястра')
     path = wR.find_path(words[0], words[1])
     print(path)

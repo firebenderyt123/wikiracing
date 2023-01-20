@@ -87,16 +87,6 @@ class CustomList:
         self._data[self._curr_level].insert(0, obj)
         self._curr_obj = 0
 
-    def compare(self) -> bool:
-        left_part = self._data[:self._total_levels // 2]
-        right_part = self._data[self._total_levels // 2:]
-        right_titles = [obj['title'] for arr in right_part for obj in arr]
-        for arr in left_part:
-            for obj in arr:
-                if obj['title'] in right_titles:
-                    return obj['title']
-        return False
-
 # cL = CustomList()
 # cL.append_level()
 # cL.append_data({'title': 'Title11', 'link': 'test'})
