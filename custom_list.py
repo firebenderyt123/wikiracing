@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 
 
 class CustomList:
@@ -24,31 +24,31 @@ class CustomList:
     def get_parent(self, level: int):
         return [obj['parent'] for obj in self._data[level]]
 
-    def get_level(self) -> Optional[List[Dict[str, Any]]]:
+    def get_level(self) -> Optional[List[Dict[str, str]]]:
         if self._curr_level > -1 and self._curr_level < self._total_levels:
             return self._data[self._curr_level]
 
-    def next_level(self) -> Optional[List[Dict[str, Any]]]:
+    def next_level(self) -> Optional[List[Dict[str, str]]]:
         if self._curr_level < self._total_levels - 1:
             self._curr_level += 1
             return self._data[self._curr_level]
 
-    def prev_level(self) -> Optional[List[Dict[str, Any]]]:
+    def prev_level(self) -> Optional[List[Dict[str, str]]]:
         if self._curr_level > 0:
             self._curr_level -= 1
             return self._data[self._curr_level]
 
-    def get_data(self) -> Optional[Dict[str, Any]]:
+    def get_data(self) -> Optional[Dict[str, str]]:
         if (self._curr_obj > -1 and
                 self._curr_obj < len(self._data[self._curr_level])):
             return self._data[self._curr_level][self._curr_obj]
 
-    def next_data(self) -> Optional[Dict[str, Any]]:
+    def next_data(self) -> Optional[Dict[str, str]]:
         if self._curr_obj < len(self._data[self._curr_level]) - 1:
             self._curr_obj += 1
             return self._data[self._curr_level][self._curr_obj]
 
-    def prev_data(self) -> Optional[Dict[str, Any]]:
+    def prev_data(self) -> Optional[Dict[str, str]]:
         if self._curr_obj > 0:
             self._curr_obj -= 1
             return self._data[self._curr_level][self._curr_obj]
@@ -71,28 +71,21 @@ class CustomList:
         if level <= self._curr_level:
             self._curr_level -= 1
 
-    def append_data(self, obj: Dict[str, Any]):
+    def append_array(self, arr: List[Dict[str, str]]):
+        [self._data[self._curr_level].append(obj) for obj in arr]
+        self._curr_obj = len(self._data[-1]) - 1
+
+    def append_data(self, obj: Dict[str, str]):
         self._data[self._curr_level].append(obj)
         self._curr_obj = len(self._data[-1]) - 1
 
-    def insert_data(self, obj: Dict[str, Any], level: int = 0): # noqa
+    def insert_data(self, obj: Dict[str, str], level: int = 0): # noqa
         self._data[level].append(obj)
-        self._curr_obj = len(self._data[level]) - 1
+        self._curr_obj = level
 
-    def prepend_data(self, obj: Dict[str, Any]):
+    def prepend_data(self, obj: Dict[str, str]):
         self._data[self._curr_level].insert(0, obj)
-        self._curr_obj = len(self._data[0]) - 1
-
-    def compare(self) -> bool:
-        left_part = self._data[:self._total_levels // 2]
-        right_part = self._data[self._total_levels // 2:]
-        right_titles = [obj['title'] for arr in right_part for obj in arr]
-        for arr in left_part:
-            for obj in arr:
-                if obj['title'] in right_titles:
-                    return obj['title']
-        return False
-
+        self._curr_obj = 0
 
 # cL = CustomList()
 # cL.append_level()
