@@ -3,7 +3,7 @@ import requests
 
 from custom_list import CustomList
 from wikipedia import Wikipedia
-from database import Database as db
+from database import Database as db, db_loop
 
 requests_per_minute = 100
 links_per_page = 200
@@ -17,7 +17,7 @@ class WikiRacer:
         self.domain = f'https://{lang}.wikipedia.org'
         self.page_url = f'{self.domain}/wiki/'
 
-    def find_path(self, start: str, finish: str) -> List[str]:
+    async def find_path(self, start: str, finish: str) -> List[str]:
         self.cL = CustomList()
         self.path = []
         self.checked = []
@@ -35,17 +35,23 @@ class WikiRacer:
         self.cL.append_level()
         self.cL.append_data({'title': finish, 'parent': ''})
 
-        res = self.links_finder()
+        res = await self.links_finder()
 
         if res is not True:
             return []
 
         return self.build_path()
 
-    def links_finder(self) -> List[str]:
+    async def links_finder(self) -> List[str]:
+        #
+        # p.s
+        # if a page has no links, 
+        # it will be rechecked again after rescaning
+        #
 
         self.curr_level += 1
         if self.curr_level > 3:
+            # need up to 40 000 links to check
             return False
 
         # check links starting from first node
@@ -57,7 +63,7 @@ class WikiRacer:
             if page in self.checked:
                 continue
 
-            titles = db.get_titles(page)
+            titles = await db.get_titles(page)
             print(self.curr_level)
             print('db:', page)
             
@@ -68,23 +74,23 @@ class WikiRacer:
                 titles = wiki.parse_links_titles(obj)
                 
                 for title in titles:
-                    db.insert_relation(title, page)
+                    await db.insert_relation(title, page)
 
             arr = [{'title': title, 'parent': page} for title in titles]
 
             self.cL.append_array(arr)
             self.checked.append(page)
         
-        # search dublicate
-        for arr in self.cL._data[1:-1]:
-            for obj in arr:
-                if obj['title'] == self.cL._data[-1][0]['title']:
-                    self.dublicate_title = obj['title']
-                    return True
+            # search dublicate
+            for arr in self.cL._data[1:-1]:
+                for obj in arr:
+                    if obj['title'] == self.cL._data[-1][0]['title']:
+                        self.dublicate_title = obj['title']
+                        return True
 
         self.cL._curr_level += 1
 
-        return self.links_finder()
+        return await self.links_finder()
 
     def build_path(self) -> List[str]:
         for arr in self.cL._data[1:-1]:
@@ -104,8 +110,11 @@ class WikiRacer:
         return requests.get(url).status_code == 200
 
 
-if __name__ == '__main__':
+async def start():
     wR = WikiRacer('uk')
-    words = ('Фестиваль', 'Пілястра')
-    path = wR.find_path(words[0], words[1])
+    words = ('Дружина (військо)', '6 жовтня')
+    path = await wR.find_path(words[0], words[1])
     print(path)
+
+if __name__ == '__main__':
+    db_loop.run_until_complete(start())

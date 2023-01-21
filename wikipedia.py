@@ -1,9 +1,7 @@
 from typing import Union, List, Dict, Any
 import requests
 import json
-
-from datetime import datetime
-from time import sleep
+import time
 
 JsonType = Union[None, int, str, bool, List[Any], Dict[str, Any]]
 
@@ -25,11 +23,11 @@ class Wikipedia:
         })
 
     def request(self, params: Dict[str, str]) -> JsonType:
-        start_time = datetime.now()
+        start_time = time.perf_counter()
         obj = requests.get(self.url, params=params).json()
-        req_time = (datetime.now() - start_time).total_seconds()
-        if self.delay > req_time:
-            sleep(self.delay - req_time)
+        exec_time = time.perf_counter() - start_time
+        if self.delay > exec_time:
+            time.sleep(self.delay - exec_time)
         return obj
 
     def print_json(self, obj: Dict[str, JsonType]):
@@ -47,5 +45,5 @@ class Wikipedia:
 
 if __name__ == '__main__':
     wiki = Wikipedia()
-    obj = wiki.get_links("Дружба")
+    obj = wiki.get_links("Бароко")
     print(wiki.parse_links_titles(obj))
