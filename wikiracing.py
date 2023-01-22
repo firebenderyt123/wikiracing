@@ -70,12 +70,8 @@ class WikiRacer:
                 continue
 
             titles = await db.get_titles(page)
-            # print(self.curr_level)
-            # print('db:', page)
-            
+
             if not titles:
-                
-                # print('url:', page)
                 obj = wiki.get_links(page, links_per_page)
                 titles = wiki.parse_links_titles(obj)
                 

@@ -18,7 +18,6 @@ class Database:
 
     @staticmethod
     async def disconnect(conn: Connection):
-        print(type(conn))
         await conn.close()
 
     @staticmethod
