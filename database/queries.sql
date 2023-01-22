@@ -48,22 +48,38 @@ WITH RECURSIVE t AS (
 		SELECT
 			q.title as title,
 			p.title as parent,
-			1 as level
+			1 as level,
+			ARRAY[q.title]::VARCHAR[] as way
 		FROM relations as r
 		INNER JOIN pages as p ON p.page_id = r.parent_id
 		INNER JOIN pages as q ON q.page_id = r.page_id
-		LIMIT 5
+		WHERE r.parent_id = (
+			SELECT parent_id
+			FROM relations
+			ORDER BY random()
+			LIMIT 1
+		)
+		LIMIT 1600 /* these limits are making requests faster (you can try to remove them)
+		but who knows how long it'll be processed.
+		Moreover, sometimes the length of the path could be smaller than N
+		*/
 	) UNION ALL (
-		SELECT
+		SELECT 
 			q.title as title,
 			p.title as parent,
-			t.level + 1 as level
+			t.level + 1 as level,
+			way || q.title
 		FROM relations as r
 		INNER JOIN pages as p ON p.page_id = r.parent_id
 		INNER JOIN pages as q ON q.page_id = r.page_id
 		INNER JOIN t ON t.title = p.title
-		WHERE t.level <= 3
-		LIMIT 5
+		WHERE NOT (q.title = ANY(way))
+		AND t.level < 8 -- N = 8
+		ORDER BY t.level
+		LIMIT 1600 /* these limits are making requests faster (you can try to remove them)
+		but who knows how long it'll be processed.
+		Moreover, sometimes the length of the path could be smaller than N
+		*/
 	)
 )
-SELECT CONCAT(t.parent, ' -> ', t.title) FROM t;
+SELECT way FROM t ORDER BY level DESC LIMIT 5;

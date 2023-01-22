@@ -1,12 +1,14 @@
 from typing import List
 import requests
+import asyncio
 
 from custom_list import CustomList
 from wikipedia import Wikipedia
-from database import Database as db, db_loop
+from database import Database as db
 
 requests_per_minute = 100
 links_per_page = 200
+max_path_len_check = 4  # affects only a quick search of the database 
 
 wiki = Wikipedia("uk", requests_per_minute)
 
@@ -19,8 +21,8 @@ class WikiRacer:
 
     async def find_path(self, start: str, finish: str) -> List[str]:
         self.cL = CustomList()
-        self.path = []
-        self.checked = []
+        self.path: List[str] = []
+        self.checked: List[str] = []
         self.curr_level = 0
 
         u_start = start.replace(' ', '_')
@@ -35,14 +37,18 @@ class WikiRacer:
         self.cL.append_level()
         self.cL.append_data({'title': finish, 'parent': ''})
 
-        res = await self.links_finder()
+        res = await self.fast_check(start, finish)
+        if res:
+            return res
+        
+        res = await self.links_finder()  # type: ignore
 
         if res is not True:
             return []
 
         return self.build_path()
 
-    async def links_finder(self) -> List[str]:
+    async def links_finder(self) -> List[str] | bool:
         #
         # p.s
         # if a page has no links, 
@@ -50,7 +56,7 @@ class WikiRacer:
         #
 
         self.curr_level += 1
-        if self.curr_level > 3:
+        if self.curr_level > max_path_len_check - 1:
             # need up to 40 000 links to check
             return False
 
@@ -64,12 +70,12 @@ class WikiRacer:
                 continue
 
             titles = await db.get_titles(page)
-            print(self.curr_level)
-            print('db:', page)
+            # print(self.curr_level)
+            # print('db:', page)
             
             if not titles:
                 
-                print('url:', page)
+                # print('url:', page)
                 obj = wiki.get_links(page, links_per_page)
                 titles = wiki.parse_links_titles(obj)
                 
@@ -100,10 +106,17 @@ class WikiRacer:
                     self.dublicate_title = obj['parent']
                     
                     if self.dublicate_title == self.cL._data[0][0]['title']:
-                        self.path.insert(0, self.dublicate_title)
+                        self.path.insert(0, str(self.dublicate_title))
                         return self.path
 
                     return self.build_path()
+        return []
+
+    async def fast_check(self, start: str, finish: str) -> List[str]:
+        res = await db.recurse_path_finder(
+            start, finish, max_path_len_check
+        )
+        return res if res is not None else []
 
     @staticmethod
     def is_url_exists(url: str) -> bool:
@@ -117,4 +130,6 @@ async def start():
     print(path)
 
 if __name__ == '__main__':
-    db_loop.run_until_complete(start())
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(start())
+    loop.close()

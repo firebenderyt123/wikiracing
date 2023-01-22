@@ -1,9 +1,17 @@
-from typing import Union, List, Dict, Any
+from typing import List, Dict
 import requests
 import json
 import time
 
-JsonType = Union[None, int, str, bool, List[Any], Dict[str, Any]]
+JsonType = Dict[
+    str, Dict[
+        str, Dict[
+            str, Dict[
+                str, str
+            ]
+        ]
+    ]
+]
 
 
 class Wikipedia:
@@ -17,9 +25,9 @@ class Wikipedia:
             "action": "query",
             "format": "json",
             "generator": "links",
-            "gplnamespace": 0,
+            "gplnamespace": str(0),
             "titles": title,
-            "gpllimit": limit
+            "gpllimit": str(limit)
         })
 
     def request(self, params: Dict[str, str]) -> JsonType:
@@ -33,7 +41,7 @@ class Wikipedia:
     def print_json(self, obj: Dict[str, JsonType]):
         print(json.dumps(obj, indent=4, ensure_ascii=False))
 
-    def parse_links_titles(self, json: Dict[str, JsonType]) -> List[str]:
+    def parse_links_titles(self, json: JsonType) -> List[str]:
         if 'query' not in json:
             return []
 

@@ -27,31 +27,37 @@ class CustomList:
     def get_level(self) -> Optional[List[Dict[str, str]]]:
         if self._curr_level > -1 and self._curr_level < self._total_levels:
             return self._data[self._curr_level]
+        return None
 
     def next_level(self) -> Optional[List[Dict[str, str]]]:
         if self._curr_level < self._total_levels - 1:
             self._curr_level += 1
             return self._data[self._curr_level]
+        return None
 
     def prev_level(self) -> Optional[List[Dict[str, str]]]:
         if self._curr_level > 0:
             self._curr_level -= 1
             return self._data[self._curr_level]
+        return None
 
     def get_data(self) -> Optional[Dict[str, str]]:
         if (self._curr_obj > -1 and
                 self._curr_obj < len(self._data[self._curr_level])):
             return self._data[self._curr_level][self._curr_obj]
+        return None
 
     def next_data(self) -> Optional[Dict[str, str]]:
         if self._curr_obj < len(self._data[self._curr_level]) - 1:
             self._curr_obj += 1
             return self._data[self._curr_level][self._curr_obj]
+        return None
 
     def prev_data(self) -> Optional[Dict[str, str]]:
         if self._curr_obj > 0:
             self._curr_obj -= 1
             return self._data[self._curr_level][self._curr_obj]
+        return None
 
     def append_level(self) -> int:
         self._data.append([])
